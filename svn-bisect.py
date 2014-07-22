@@ -3,9 +3,9 @@ import os
 import argparse
 import subprocess
 
-def update(modules, revision):
+def update(paths, revision):
     command = ["svn", "up", "-r", str(revision)]
-    command.extend(modules)
+    command.extend(paths)
     with open(os.devnull, 'w') as dev_null:
         subprocess.call(command, stdout=dev_null, stderr=dev_null)
 
@@ -13,9 +13,9 @@ def is_command_successful(command):
     with open(os.devnull, 'w') as dev_null:
         return 0 == subprocess.call(command, shell=True, stdout=dev_null, stderr=dev_null)
 
-def is_command_successful_for(modules, revision, command):
+def is_command_successful_for(paths, revision, command):
     print "Updating to revision %d..." % revision
-    update(modules, revision)
+    update(paths, revision)
     print "Testing revision %d..." % revision
     success = is_command_successful(command)
     if success:
@@ -25,7 +25,7 @@ def is_command_successful_for(modules, revision, command):
     print
 
 
-def bisect(good_revision, bad_revision, modules, command):
+def bisect(good_revision, bad_revision, paths, command):
     revision_to_test = min(good_revision, bad_revision) + (abs(good_revision - bad_revision) / 2)
 
     if revision_to_test in (good_revision, bad_revision):
@@ -33,20 +33,20 @@ def bisect(good_revision, bad_revision, modules, command):
         print "Bad revision: %d" % bad_revision
         return
 
-    if is_command_successful_for(modules, revision_to_test, command):
+    if is_command_successful_for(paths, revision_to_test, command):
         good_revision = revision_to_test
     else:
         bad_revision = revision_to_test
 
-    bisect(good_revision, bad_revision, modules, command)
+    bisect(good_revision, bad_revision, paths, command)
 
 
-def are_boundaries_correct(good_revision, bad_revision, modules, command):
-    if not is_command_successful_for(modules, good_revision, command):
+def are_boundaries_correct(good_revision, bad_revision, paths, command):
+    if not is_command_successful_for(paths, good_revision, command):
         print "ERROR: Test FAILS for provided good revision %d!" % good_revision
         return False
 
-    if is_command_successful_for(modules, bad_revision, command):
+    if is_command_successful_for(paths, bad_revision, command):
         print "ERROR: Test SUCCEEDS for provided bad revision %d!" % bad_revision
         return False
 
@@ -55,23 +55,23 @@ def are_boundaries_correct(good_revision, bad_revision, modules, command):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Shows first bad revision")
+    parser = argparse.ArgumentParser(description="Finds the revision where the test command stops/starts working")
 
     try:
-        parser.add_argument("-g", "--good-revision", type=int, required=True)
-        parser.add_argument("-b", "--bad-revision", type=int, required=True)
-        parser.add_argument("-m", "--modules", default=['.'], nargs="+")
-        parser.add_argument("-t", "--test-commands", default=[], nargs="+", required=True)
-        parser.add_argument("-s", "--skip-boundary-check", default=False, action='store_true')
+        parser.add_argument("--good-revision", "-g", type=int, required=True, help="A revision where the test command succeeds", metavar="REVISION")
+        parser.add_argument("--bad-revision", "-b", type=int, required=True, help="A revision where the test command fails", metavar="REVISION")
+        parser.add_argument("--test-commands", "-t", default=[], nargs="+", required=True, help="A command that returns exit code 0 if and only if it succeeds", metavar="COMMAND")
+        parser.add_argument("--paths", "-p", default=['.'], nargs="+", help="One or more paths to local Subversion repositories that should be updated", metavar="PATH")
+        parser.add_argument("--skip-boundary-check", "-s", default=False, action="store_true", help="Don't execute the test for the provided good and bad revision")
 
         options = parser.parse_args()
 
         if not options.skip_boundary_check and \
            not are_boundaries_correct(options.good_revision, options.bad_revision,
-                options.modules, options.test_commands):
+                options.paths, options.test_commands):
             return 1
         bisect(options.good_revision, options.bad_revision,
-                options.modules, options.test_commands)
+                options.paths, options.test_commands)
         return 0
     except ValueError:
         parser.print_help()
