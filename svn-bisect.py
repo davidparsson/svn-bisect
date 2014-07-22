@@ -25,8 +25,6 @@ def is_command_successful_for(modules, revision, command):
     print
 
 
-
-
 def bisect(good_revision, bad_revision, modules, command):
     revision_to_test = min(good_revision, bad_revision) + (abs(good_revision - bad_revision) / 2)
 
@@ -45,11 +43,11 @@ def bisect(good_revision, bad_revision, modules, command):
 
 def are_boundaries_correct(good_revision, bad_revision, modules, command):
     if not is_command_successful_for(modules, good_revision, command):
-        print "ERROR: Test fails for good revision: %d!" % good_revision
+        print "ERROR: Test FAILS for provided good revision %d!" % good_revision
         return False
 
     if is_command_successful_for(modules, bad_revision, command):
-        print "ERROR: Test succeeds for bad revision: %d!" % bad_revision
+        print "ERROR: Test SUCCEEDS for provided bad revision %d!" % bad_revision
         return False
 
     return True
