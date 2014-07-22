@@ -1,3 +1,7 @@
+# svn-bisect
+A bisect script with support for updating multiple local Subversion checkouts
+
+# Usage
     usage: svn-bisect.py [-h] --good-revision REVISION --bad-revision REVISION
                          --test-commands COMMAND [COMMAND ...]
                          [--paths PATH [PATH ...]] [--skip-boundary-check]
